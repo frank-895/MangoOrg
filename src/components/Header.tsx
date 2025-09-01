@@ -17,7 +17,7 @@ export default function Header() {
           <div className="flex items-center">
             <div className="text-2xl font-bold mr-8">🥭 MangoOrg</div>
             <nav className="hidden lg:flex space-x-6">
-            <Link href="/home" className="hover:text-green-200 transition-colors">
+            <Link href="/" className="hover:text-green-200 transition-colors">
                 Home
               </Link>
               <Link href="/dashboard" className="hover:text-green-200 transition-colors">
