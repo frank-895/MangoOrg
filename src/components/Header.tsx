@@ -2,12 +2,18 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { user, signOut } = useAuth()
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
+
+  const handleSignOut = async () => {
+    await signOut()
   }
 
   return (
@@ -15,26 +21,52 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <div className="text-2xl font-bold mr-8">🥭 MangoOrg</div>
+            <Link href="/" className="text-2xl font-bold mr-8">🥭 MangoOrg</Link>
             <nav className="hidden lg:flex space-x-6">
-            <Link href="/" className="hover:text-green-200 transition-colors">
+              <Link href="/" className="hover:text-green-200 transition-colors">
                 Home
               </Link>
-              <Link href="/dashboard" className="hover:text-green-200 transition-colors">
-                Dashboard
-              </Link>
               <Link href="/diseases" className="hover:text-green-200 transition-colors">
-                Diseases & Pests
+                    Diseases & Pests
               </Link>
+              {user && (
+                <>
+                  <Link href="/dashboard" className="hover:text-green-200 transition-colors">
+                    Dashboard
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
           <div className="flex items-center space-x-2 lg:space-x-4">
-            <button className="bg-green-600 hover:bg-green-500 px-3 lg:px-4 py-2 rounded-lg transition-colors text-sm lg:text-base">
-              Login
-            </button>
-            <button className="bg-green-800 hover:bg-green-700 px-3 lg:px-4 py-2 rounded-lg transition-colors text-sm lg:text-base">
-              Sign Up
-            </button>
+            {user ? (
+              <>
+                <span className="text-sm text-green-200">
+                  {user.user_metadata?.display_name || user.email}
+                </span>
+                <button 
+                  onClick={handleSignOut}
+                  className="bg-red-600 hover:bg-red-700 px-3 lg:px-4 py-2 rounded-lg transition-colors text-sm lg:text-base"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/login"
+                  className="bg-green-600 hover:bg-green-500 px-3 lg:px-4 py-2 rounded-lg transition-colors text-sm lg:text-base"
+                >
+                  Login
+                </Link>
+                <Link 
+                  href="/signup"
+                  className="bg-green-800 hover:bg-green-700 px-3 lg:px-4 py-2 rounded-lg transition-colors text-sm lg:text-base"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
             {/* Mobile menu button */}
             <button 
               className="lg:hidden text-white hover:text-green-200 ml-2"
@@ -51,15 +83,32 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="lg:hidden mt-4 pb-4 border-t border-green-600">
             <nav className="flex flex-col space-y-4 pt-4">
-            <Link href="/" className="hover:text-green-200 transition-colors">
+              <Link 
+                href="/" 
+                className="hover:text-green-200 transition-colors py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Home
               </Link>
-            <Link href="/orchards" className="hover:text-green-200 transition-colors">
-                Dashboard
-              </Link>
-              <Link href="/diseases" className="hover:text-green-200 transition-colors">
-                Diseases & Pests
-              </Link>
+              <Link 
+                    href="/diseases" 
+                    className="hover:text-green-200 transition-colors py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Diseases & Pests
+                </Link>
+              {user && (
+                <>
+                  <Link 
+                    href="/dashboard" 
+                    className="hover:text-green-200 transition-colors py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+
+                </>
+              )}
             </nav>
           </div>
         )}
