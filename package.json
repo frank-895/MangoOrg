@@ -6,10 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@supabase/supabase-js": "^2.56.1",
     "next": "14.0.4",
+    "prisma": "^6.15.0",
     "react": "^18",
     "react-dom": "^18"
   },
