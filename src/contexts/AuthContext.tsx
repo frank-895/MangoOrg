@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { createOrUpdateProfile } from '@/lib/auth'
 
 interface AuthContextType {
   user: User | null
@@ -28,6 +29,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         setUser(session?.user ?? null)
+        
+        // Create profile for existing user if they don't have one
+        if (session?.user) {
+          try {
+            await createOrUpdateProfile(session.user.id, 'USER')
+          } catch (error) {
+            console.error('Error creating profile:', error)
+          }
+        }
       } catch (error) {
         console.error('Error getting session:', error)
       } finally {
@@ -41,6 +51,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null)
+        
+        // Create profile for new users
+        if (event === 'SIGNED_IN' && session?.user) {
+          try {
+            await createOrUpdateProfile(session.user.id, 'USER')
+          } catch (error) {
+            console.error('Error creating profile:', error)
+          }
+        }
+        
         setLoading(false)
       }
     )

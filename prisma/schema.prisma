@@ -16,3 +16,40 @@ datasource db {
 // Note: We're using Supabase's built-in auth.users table for authentication
 // This schema is for future application-specific models (orchards, inspections, etc.)
 // that will reference the auth.users table via user_id
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Reference to Supabase auth.users table
+  @@map("profiles")
+}
+
+model Disease {
+  id               String       @id @default(cuid())
+  name             String       @unique
+  type             DiseaseType
+  severity         Int?         @default(0)
+  spreadability    Int?         @default(0)
+  shortDescription String?
+  longDescription  String?
+  controlMethod    String?
+  imageLink        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@map("diseases")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum DiseaseType {
+  DISEASE
+  PEST
+}
