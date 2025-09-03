@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Disease, CreateDiseaseData } from '@/types/disease'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { createLocalPreview, cleanupLocalPreview } from '@/lib/images'
+import { createLocalPreview, cleanupLocalPreview, validateImageFile } from '@/lib/images'
 
 interface DiseaseFormProps {
   disease?: Disease | null
@@ -24,6 +24,9 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
   const [imageToDelete, setImageToDelete] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [isUserAdmin, setIsUserAdmin] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState<CreateDiseaseData>({
     name: '',
@@ -139,9 +142,13 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
     }))
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const processImageFile = async (file: File) => {
+    // Validate file
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid file')
+      return
+    }
 
     // Show local preview immediately
     const localUrl = createLocalPreview(file)
@@ -197,6 +204,12 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
     }
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await processImageFile(file)
+  }
+
   const handleImageDelete = async () => {
     if (!imagePreview) return
 
@@ -209,6 +222,40 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
     setImagePreview(null)
     setCurrentImageUrl(null)
     setFormData(prev => ({ ...prev, imageLink: '' }))
+  }
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      const file = files[0]
+      if (file.type.startsWith('image/')) {
+        await processImageFile(file)
+      } else {
+        setError('Please drop an image file')
+      }
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -443,20 +490,68 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
                 </div>
               )}
 
-              {/* Upload New Image */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Accepted formats: JPEG, PNG, WebP. Maximum size: 5MB.
-              </p>
+              {/* Drag and Drop Zone */}
+              <div
+                ref={dropZoneRef}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className={`
+                  relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
+                  ${isDragOver 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }
+                `}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <svg 
+                      className={`w-12 h-12 ${isDragOver ? 'text-green-500' : 'text-gray-400'}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
+                      />
+                    </svg>
+                  </div>
+                  
+                  <div>
+                    <p className={`text-lg font-medium ${isDragOver ? 'text-green-600' : 'text-gray-700'}`}>
+                      {isDragOver ? 'Drop your image here' : 'Drag & drop an image here'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      or click to browse files
+                    </p>
+                  </div>
+                  
+                  <div className="text-xs text-gray-400">
+                    Supported formats: JPEG, PNG, WebP • Max size: 5MB
+                  </div>
+                </div>
+              </div>
               
               {uploadingImage && (
-                <div className="mt-2 text-sm text-blue-600">
-                  Uploading image...
+                <div className="mt-4 text-sm text-blue-600 text-center">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Uploading image...</span>
+                  </div>
                 </div>
               )}
             </div>

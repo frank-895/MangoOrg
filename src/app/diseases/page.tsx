@@ -86,6 +86,19 @@ export default function DiseasesPage() {
     return 'text-red-600 bg-red-100'
   }
 
+  const getPlaceholderImage = (disease: Disease) => {
+    if (disease.imageLink) {
+      return disease.imageLink
+    }
+    
+    // Return different placeholder based on disease type
+    if (disease.type === 'DISEASE') {
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDMyMCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNjAgOTZDMTQzLjQzMSA5NiAxMzAgMTA5LjQzMSAxMzAgMTI2QzEzMCAxNDIuNTY5IDE0My40MzEgMTU2IDE2MCAxNTZDMTc2LjU2OSAxNTYgMTkwIDE0Mi41NjkgMTkwIDEyNkMxOTAgMTA5LjQzMSAxNzYuNTY5IDk2IDE2MCA5NloiIGZpbGw9IiNEN0Q5RDAiLz4KPHBhdGggZD0iTTE2MCAxMzZDMTA5LjQzMSAxMzYgNjYgMTc5LjQzMSA2NiAyMzBDNjYgMjgwLjU2OSAxMDkuNDMxIDMyNCAxNjAgMzI0QzIxMC41NjkgMzI0IDI1NCAyODAuNTY5IDI1NCAyMzBDMjU0IDE3OS40MzEgMjEwLjU2OSAxMzYgMTYwIDEzNloiIGZpbGw9IiNEN0Q5RDAiLz4KPHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDQvMTAvMjAwNC1zdmciPgo8cGF0aCBkPSJNMjQgNEMxMi45NTQzIDQgNCAxMi45NTQzIDQgMjRDNCAzNS4wNDU3IDEyLjk1NDMgNDQgMjQgNDRDMzUuMDQ1NyA0NCA0NCAzNS4wNDU3IDQ0IDI0QzQ0IDEyLjk1NDMgMzUuMDQ1NyA0IDI0IDRaIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAxMkMxNy4zNzI2IDEyIDEyIDE3LjM3MjYgMTIgMjRDMTIgMzAuNjI3NCAxNy4zNzI2IDM2IDI0IDM2QzMwLjYyNzQgMzYgMzYgMzAuNjI3NCAzNiAyNEMzNiAxNy4zNzI2IDMwLjYyNzQgMTIgMjQgMTJaIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAyMEMxOC40NzcgMjAgMTQgMjQuNDc3IDE0IDMwQzE0IDM1LjUyMyAxOC40NzcgNDAgMjQgNDBDMjkuNTIzIDQwIDM0IDM1LjUyMyAzNCAzMEMzNCAyNC40NzcgMjkuNTIzIDIwIDI0IDIwWiIgZmlsbD0iI0Q3RDlEMCIvPgo8L3N2Zz4KPC9zdmc+'
+    } else {
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDMyMCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTkyIiBmaWxsPSIjRkZGN0YwIi8+CjxwYXRoIGQ9Ik0xNjAgOTZDMTQzLjQzMSA5NiAxMzAgMTA5LjQzMSAxMzAgMTI2QzEzMCAxNDIuNTY5IDE0My40MzEgMTU2IDE2MCAxNTZDMTc2LjU2OSAxNTYgMTkwIDE0Mi41NjkgMTkwIDEyNkMxOTAgMTA5LjQzMSAxNzYuNTY5IDk2IDE2MCA5NloiIGZpbGw9IiNGRkQ3MDAiLz4KPHBhdGggZD0iTTE2MCAxMzZDMTA5LjQzMSAxMzYgNjYgMTc5LjQzMSA2NiAyMzBDNjYgMjgwLjU2OSAxMDkuNDMxIDMyNCAxNjAgMzI0QzIxMC41NjkgMzI0IDI1NCAyODAuNTY5IDI1NCAyMzBDMjU0IDE3OS40MzEgMjEwLjU2OSAxMzYgMTYwIDEzNloiIGZpbGw9IiNGRkQ3MDAiLz4KPHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDQvMTAvMjAwNC1zdmciPgo8cGF0aCBkPSJNMjQgNEMxMi45NTQzIDQgNCAxMi45NTQzIDQgMjRDNCAzNS4wNDU3IDEyLjk1NDMgNDQgMjQgNDRDMzUuMDQ1NyA0NCA0NCAzNS4wNDU3IDQ0IDI0QzQ0IDEyLjk1NDMgMzUuMDQ1NyA0IDI0IDRaIiBmaWxsPSIjRkZGN0YwIi8+CjxwYXRoIGQ9Ik0yNCAxMkMxNy4zNzI2IDEyIDEyIDE3LjM3MjYgMTIgMjRDMTIgMzAuNjI3NCAxNy4zNzI2IDM2IDI0IDM2QzMwLjYyNzQgMzYgMzYgMzAuNjI3NCAzNiAyNEMzNiAxNy4zNzI2IDMwLjYyNzQgMTIgMjQgMTJaIiBmaWxsPSIjRkZGN0YwIi8+CjxwYXRoIGQ9Ik0yNCAyMEMxOC40NzcgMjAgMTQgMjQuNDc3IDE0IDMwQzE0IDM1LjUyMyAxOC40NzcgNDAgMjQgNDBDMjkuNTIzIDQwIDM0IDM1LjUyMyAzNCAzMEMzNCAyNC40NzcgMjkuNTIzIDIwIDI0IDIwWiIgZmlsbD0iI0ZGRDcwMCIvPgo8L3N2Zz4KPC9zdmc+'
+    }
+  }
+
   // Show loading while checking role or fetching data
   if (loading || roleLoading) {
     return (
@@ -168,15 +181,13 @@ export default function DiseasesPage() {
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Image */}
-                {disease.imageLink && (
-                  <div className="h-48 overflow-hidden">
-                    <img
-                      src={disease.imageLink}
-                      alt={disease.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+                <div className="h-48 overflow-hidden">
+                  <img
+                    src={getPlaceholderImage(disease)}
+                    alt={disease.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 
                 {/* Content */}
                 <div className="p-6">
