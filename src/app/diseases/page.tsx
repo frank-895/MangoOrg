@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 export default function DiseasesPage() {
   const [diseases, setDiseases] = useState<Disease[]>([])
   const [loading, setLoading] = useState(true)
+  const [roleLoading, setRoleLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<'ALL' | 'DISEASE' | 'PEST'>('ALL')
   const [isUserAdmin, setIsUserAdmin] = useState(false)
@@ -57,11 +58,14 @@ export default function DiseasesPage() {
           setIsUserAdmin(false)
         }
       } catch (error) {
-        console.error('Error checking admin status:', error)
+        console.error('Error checking admin status')
         setIsUserAdmin(false)
+      } finally {
+        setRoleLoading(false)
       }
     } else {
       setIsUserAdmin(false)
+      setRoleLoading(false)
     }
   }
 
@@ -82,7 +86,8 @@ export default function DiseasesPage() {
     return 'text-red-600 bg-red-100'
   }
 
-  if (loading) {
+  // Show loading while checking role or fetching data
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto px-4">

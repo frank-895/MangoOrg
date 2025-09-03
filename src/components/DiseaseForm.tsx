@@ -16,6 +16,7 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [roleLoading, setRoleLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -76,10 +77,26 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
       } catch (error) {
         console.error('Error checking admin status:')
         setIsUserAdmin(false)
+      } finally {
+        setRoleLoading(false)
       }
     } else {
       setIsUserAdmin(false)
+      setRoleLoading(false)
     }
+  }
+
+  // Show loading while checking role
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Check if user is admin
