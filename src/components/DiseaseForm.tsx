@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Disease, CreateDiseaseData } from '@/types/disease'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { createLocalPreview, cleanupLocalPreview } from '@/lib/images'
 
 interface DiseaseFormProps {
   disease?: Disease | null
@@ -19,6 +20,8 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
   const [roleLoading, setRoleLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
+  const [imageToDelete, setImageToDelete] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [isUserAdmin, setIsUserAdmin] = useState(false)
 
@@ -48,9 +51,19 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
       })
       if (disease.imageLink) {
         setImagePreview(disease.imageLink)
+        setCurrentImageUrl(disease.imageLink)
       }
     }
   }, [disease, isEditing, user])
+
+  // Cleanup local preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        cleanupLocalPreview(imagePreview)
+      }
+    }
+  }, [imagePreview])
 
   const checkAdminStatus = async () => {
     if (user) {
@@ -130,18 +143,13 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only JPEG, PNG, and WebP images are allowed.')
-      return
-    }
-
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      setError('File size too large. Maximum size is 5MB.')
-      return
+    // Show local preview immediately
+    const localUrl = createLocalPreview(file)
+    setImagePreview(localUrl)
+    
+    // Mark old image for deletion
+    if (currentImageUrl) {
+      setImageToDelete(currentImageUrl)
     }
 
     setUploadingImage(true)
@@ -168,13 +176,39 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
       }
 
       const data = await response.json()
+      
+      // Update form data with real URL
       setFormData(prev => ({ ...prev, imageLink: data.url }))
+      setCurrentImageUrl(data.url)
+      
+      // Replace local preview with real URL
       setImagePreview(data.url)
+      
+      // Clean up local preview
+      cleanupLocalPreview(localUrl)
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload image')
+      // Revert to previous image on error
+      setImagePreview(currentImageUrl)
+      setImageToDelete(null)
     } finally {
       setUploadingImage(false)
     }
+  }
+
+  const handleImageDelete = async () => {
+    if (!imagePreview) return
+
+    // Mark current image for deletion
+    if (currentImageUrl) {
+      setImageToDelete(currentImageUrl)
+    }
+
+    // Clear preview and form data
+    setImagePreview(null)
+    setCurrentImageUrl(null)
+    setFormData(prev => ({ ...prev, imageLink: '' }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,6 +235,28 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to save disease')
+      }
+
+      // Delete old images if they were replaced
+      if (imageToDelete) {
+        try {
+          const deleteResponse = await fetch('/api/upload/delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token || ''}`
+            },
+            body: JSON.stringify({ imageUrl: imageToDelete })
+          })
+
+          if (deleteResponse.ok) {
+            console.log('✅ Deleted old image:', imageToDelete)
+          } else {
+            console.error('❌ Failed to delete old image:', imageToDelete)
+          }
+        } catch (error) {
+          console.error('❌ Error deleting old image:', error)
+        }
       }
 
       router.push('/diseases')
@@ -360,6 +416,34 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Image
               </label>
+              
+              {/* Current Image Preview */}
+              {imagePreview && (
+                <div className="mb-4">
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleImageDelete}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Click the X to remove this image
+                  </p>
+                </div>
+              )}
+
+              {/* Upload New Image */}
               <input
                 type="file"
                 accept="image/*"
@@ -373,16 +457,6 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
               {uploadingImage && (
                 <div className="mt-2 text-sm text-blue-600">
                   Uploading image...
-                </div>
-              )}
-              
-              {imagePreview && (
-                <div className="mt-4">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover rounded-lg border"
-                  />
                 </div>
               )}
             </div>

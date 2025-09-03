@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAdmin } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { deleteImage } from '@/lib/images-server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-export async function GET() {
-  try {
-    const diseases = await prisma.disease.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-    return NextResponse.json(diseases)
-  } catch (error) {
-    console.error('Error fetching diseases:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch diseases' },
-      { status: 500 }
-    )
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,36 +40,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { name, type, severity, spreadability, shortDescription, longDescription, controlMethod, imageLink } = body
+    const { imageUrl } = await request.json()
 
-    // Validate required fields
-    if (!name || !type) {
+    if (!imageUrl) {
       return NextResponse.json(
-        { error: 'Name and type are required' },
+        { error: 'No image URL provided' },
         { status: 400 }
       )
     }
 
-    // Create disease
-    const disease = await prisma.disease.create({
-      data: {
-        name,
-        type,
-        severity: severity || 0,
-        spreadability: spreadability || 0,
-        shortDescription,
-        longDescription,
-        controlMethod,
-        imageLink
-      }
-    })
+    // Delete image using utility function
+    const result = await deleteImage(imageUrl)
 
-    return NextResponse.json(disease)
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to delete image' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error creating disease:', error)
+    console.error('Error handling image deletion:', error)
     return NextResponse.json(
-      { error: 'Failed to create disease' },
+      { error: 'Failed to delete image' },
       { status: 500 }
     )
   }

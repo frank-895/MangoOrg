@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAdmin } from '@/lib/auth'
+import { uploadImage, validateImageFile } from '@/lib/images-server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,54 +50,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file using utility function
+    const validation = validateImageFile(file)
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.' },
+        { error: validation.error },
         { status: 400 }
       )
     }
 
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size too large. Maximum size is 5MB.' },
-        { status: 400 }
-      )
-    }
+    // Upload image using utility function
+    const result = await uploadImage(file)
 
-    // Generate unique filename
-    const timestamp = Date.now()
-    const fileExtension = file.name.split('.').pop()
-    const fileName = `diseases/${timestamp}-${Math.random().toString(36).substring(2)}.${fileExtension}`
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('disease-images')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
-
-    if (error) {
-      console.error('Error uploading file:', error)
-      return NextResponse.json(
-        { error: 'Failed to upload file' },
-        { status: 500 }
-      )
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('disease-images')
-      .getPublicUrl(fileName)
-
-    return NextResponse.json({ 
-      url: publicUrl,
-      fileName: fileName 
-    })
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error handling file upload:', error)
     return NextResponse.json(

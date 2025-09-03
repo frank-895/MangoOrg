@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { createClient } from '@supabase/supabase-js'
 import { isAdmin } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { deleteImage } from '@/lib/images-server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,28 +73,40 @@ export async function PUT(
     const body = await request.json()
     const { name, type, severity, spreadability, shortDescription, longDescription, controlMethod, imageLink } = body
 
-    // Validate severity and spreadability ranges if provided
-    if (severity !== undefined && (severity < 0 || severity > 10)) {
+    // Validate required fields
+    if (!name || !type) {
       return NextResponse.json(
-        { error: 'Severity must be between 0 and 10' },
+        { error: 'Name and type are required' },
         { status: 400 }
       )
     }
 
-    if (spreadability !== undefined && (spreadability < 0 || spreadability > 10)) {
+    // Get current disease to check for image changes
+    const currentDisease = await prisma.disease.findUnique({
+      where: { id: params.id }
+    })
+
+    if (!currentDisease) {
       return NextResponse.json(
-        { error: 'Spreadability must be between 0 and 10' },
-        { status: 400 }
+        { error: 'Disease not found' },
+        { status: 404 }
       )
     }
 
-    const disease = await prisma.disease.update({
+    // Handle image replacement
+    let oldImageUrl: string | null = null
+    if (currentDisease.imageLink && currentDisease.imageLink !== imageLink) {
+      oldImageUrl = currentDisease.imageLink
+    }
+
+    // Update disease
+    const updatedDisease = await prisma.disease.update({
       where: { id: params.id },
       data: {
         name,
         type,
-        severity,
-        spreadability,
+        severity: severity || 0,
+        spreadability: spreadability || 0,
         shortDescription,
         longDescription,
         controlMethod,
@@ -101,7 +114,18 @@ export async function PUT(
       }
     })
 
-    return NextResponse.json(disease)
+    // Delete old image if it was replaced
+    if (oldImageUrl) {
+      try {
+        await deleteImage(oldImageUrl)
+        console.log('✅ Deleted old image:', oldImageUrl)
+      } catch (error) {
+        console.error('❌ Error deleting old image:', error)
+        // Don't fail the update if image deletion fails
+      }
+    }
+
+    return NextResponse.json(updatedDisease)
   } catch (error) {
     console.error('Error updating disease:', error)
     return NextResponse.json(
@@ -146,11 +170,35 @@ export async function DELETE(
       )
     }
 
+    // Get disease to check for associated image
+    const disease = await prisma.disease.findUnique({
+      where: { id: params.id }
+    })
+
+    if (!disease) {
+      return NextResponse.json(
+        { error: 'Disease not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete associated image if it exists
+    if (disease.imageLink) {
+      try {
+        await deleteImage(disease.imageLink)
+        console.log('✅ Deleted disease image:', disease.imageLink)
+      } catch (error) {
+        console.error('❌ Error deleting disease image:', error)
+        // Don't fail the deletion if image deletion fails
+      }
+    }
+
+    // Delete disease
     await prisma.disease.delete({
       where: { id: params.id }
     })
 
-    return NextResponse.json({ message: 'Disease deleted successfully' })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting disease:', error)
     return NextResponse.json(
