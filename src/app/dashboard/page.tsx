@@ -80,10 +80,10 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold text-green-800 mb-2">Orchards</h3>
                 <p className="text-green-600">Manage your mango orchards</p>
               </Link>
-              <div className="bg-blue-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">Inspections</h3>
-                <p className="text-blue-600">Schedule and track inspections</p>
-              </div>
+              <Link href="/cases" className="bg-blue-50 p-6 rounded-lg hover:bg-blue-100 transition-colors">
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">Cases</h3>
+                <p className="text-blue-600">Track disease cases and records</p>
+              </Link>
               <Link href="/diseases" className="bg-orange-50 p-6 rounded-lg hover:bg-orange-100 transition-colors">
                 <h3 className="text-lg font-semibold text-orange-800 mb-2">Diseases & Pests</h3>
                 <p className="text-orange-600">Monitor and record findings</p>
