@@ -44,6 +44,57 @@ model Disease {
   @@map("diseases")
 }
 
+model Variety {
+  id                     String    @id @default(cuid())
+  varietyName            String    @map("variety_name")
+  varietySusceptability  Int       @map("variety_susceptability") // 0-10 scale
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  orchards               Orchard[]
+  
+  @@map("varieties")
+}
+
+model Location {
+  id                     String     @id @default(cuid())
+  locationName           String     @map("location_name")
+  hemisphere             Hemisphere @default(SOUTH)
+  locationSusceptability Int        @map("location_susceptability") // 0-10 scale
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+  
+  // Relations
+  orchards               Orchard[]
+  
+  @@map("locations")
+}
+
+model Orchard {
+  id            String   @id @default(cuid())
+  orchardName   String   @map("orchard_name")
+  noTreesRow    Int      @map("no_trees_row")
+  noTreesColumn Int      @map("no_trees_column")
+  area          Float    // in acres
+  userId        String   @map("user_id")
+  varietyId     String   @map("variety_id")
+  locationId    String   @map("location_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  variety       Variety  @relation(fields: [varietyId], references: [id], onDelete: Restrict)
+  location      Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  
+  @@map("orchards")
+}
+
+enum Hemisphere {
+  NORTH
+  SOUTH
+}
+
 enum UserRole {
   USER
   ADMIN
