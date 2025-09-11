@@ -315,7 +315,21 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 relative">
+      {/* Upload Overlay */}
+      {uploadingImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Uploading Image</h3>
+            <p className="text-gray-600 mb-4">Please wait while your image is being uploaded...</p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -547,11 +561,15 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
               </div>
               
               {uploadingImage && (
-                <div className="mt-4 text-sm text-blue-600 text-center">
-                  <div className="flex items-center justify-center space-x-2">
+                <div className="mt-4">
+                  <div className="flex items-center justify-center space-x-2 text-blue-600 mb-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span>Uploading image...</span>
+                    <span className="text-sm font-medium">Uploading image...</span>
                   </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center mt-2">Please wait while the image is being uploaded</p>
                 </div>
               )}
             </div>
@@ -566,10 +584,10 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
               </Link>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || uploadingImage}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {loading ? 'Saving...' : isEditing ? 'Update Disease/Pest' : 'Create Disease/Pest'}
+                {loading ? 'Saving...' : uploadingImage ? 'Uploading...' : isEditing ? 'Update Disease/Pest' : 'Create Disease/Pest'}
               </button>
             </div>
           </form>
