@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
     <div className="min-h-screen">
@@ -12,12 +14,12 @@ export default function Home() {
             Generate inspection plans and record disease & pest instances to optimize your harvest.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
+            <Link href="/dashboard" className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
               Get Started
-            </button>
-            <button className="border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
+            </Link>
+            <Link href="/diseases" className="border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
               Learn More
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -87,9 +89,6 @@ export default function Home() {
           <p className="text-xl text-gray-600 mb-8">
             Join hundreds of mango farmers who are already using MangoOrg to improve their yields.
           </p>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
-            Start Your Free Trial
-          </button>
         </div>
       </section>
     </div>
