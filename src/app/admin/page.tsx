@@ -49,6 +49,8 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deletingLocationIds, setDeletingLocationIds] = useState<Set<string>>(new Set())
+  const [deletingVarietyIds, setDeletingVarietyIds] = useState<Set<string>>(new Set())
   
   // Dialog states
   const [locationDialog, setLocationDialog] = useState<{ open: boolean; data: LocationDialogData | null }>({
@@ -263,6 +265,9 @@ export default function AdminPage() {
   const handleLocationDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this location?')) return
 
+    setDeletingLocationIds(prev => new Set(prev).add(id))
+    setError(null)
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
@@ -281,11 +286,20 @@ export default function AdminPage() {
       await loadLocations()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete location')
+    } finally {
+      setDeletingLocationIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
     }
   }
 
   const handleVarietyDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this variety?')) return
+
+    setDeletingVarietyIds(prev => new Set(prev).add(id))
+    setError(null)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -305,6 +319,12 @@ export default function AdminPage() {
       await loadVarieties()
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete variety')
+    } finally {
+      setDeletingVarietyIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
     }
   }
 
@@ -416,31 +436,44 @@ export default function AdminPage() {
 
                 {/* Locations List */}
                 <div className="grid grid-cols-1 gap-4">
-                  {locations.map((location) => (
-                    <div key={location.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{location.locationName}</h4>
-                        <p className="text-sm text-gray-600">
-                          {location.hemisphere === 'NORTH' ? 'Northern' : 'Southern'} Hemisphere • 
-                          Susceptibility: {location.locationSusceptability}/10
-                        </p>
+                  {locations.map((location) => {
+                    const isDeleting = deletingLocationIds.has(location.id)
+                    return (
+                      <div key={location.id} className={`border border-gray-200 rounded-lg p-4 flex justify-between items-center relative ${isDeleting ? 'opacity-60' : ''}`}>
+                        {isDeleting && (
+                          <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
+                            <div className="text-center">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto mb-1"></div>
+                              <p className="text-xs text-gray-600">Deleting...</p>
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{location.locationName}</h4>
+                          <p className="text-sm text-gray-600">
+                            {location.hemisphere === 'NORTH' ? 'Northern' : 'Southern'} Hemisphere • 
+                            Susceptibility: {location.locationSusceptability}/10
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openLocationDialog(location)}
+                            disabled={isDeleting}
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleLocationDelete(location.id)}
+                            disabled={isDeleting}
+                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openLocationDialog(location)}
-                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleLocationDelete(location.id)}
-                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {locations.length === 0 && (
                     <p className="text-gray-500 text-center py-8">No locations found. Add your first location.</p>
                   )}
@@ -464,7 +497,17 @@ export default function AdminPage() {
                 {/* Varieties List */}
                 <div className="grid grid-cols-1 gap-4">
                   {varieties.map((variety) => (
-                    <div key={variety.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                    <div key={variety.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center relative">
+                      {/* Loading overlay */}
+                      {deletingVarietyIds.has(variety.id) && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 rounded-lg flex items-center justify-center z-10">
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                            <span className="text-sm text-gray-600">Deleting...</span>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div>
                         <h4 className="font-semibold text-gray-900">{variety.varietyName}</h4>
                         <p className="text-sm text-gray-600">
@@ -474,13 +517,15 @@ export default function AdminPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => openVarietyDialog(variety)}
-                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                          disabled={deletingVarietyIds.has(variety.id)}
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleVarietyDelete(variety.id)}
-                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                          disabled={deletingVarietyIds.has(variety.id)}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Delete
                         </button>
