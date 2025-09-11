@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
-  const { user, loading, signOut } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminCheckLoading, setAdminCheckLoading] = useState(true)
@@ -47,10 +47,6 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-  }
 
   if (loading) {
     return (
@@ -72,19 +68,11 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-                <p className="text-gray-600">
-                  {user.user_metadata?.display_name || user.email}
-                </p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+              <p className="text-gray-600">
+                {user.user_metadata?.display_name || user.email}
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -102,10 +90,10 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* Admin Section */}
-            <div className="mt-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Tools</h2>
-              {adminCheckLoading ? (
+            {/* Admin Section - Only show for admin users */}
+            {adminCheckLoading ? (
+              <div className="mt-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Tools</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-gray-100 p-6 rounded-lg animate-pulse">
                     <div className="flex items-start">
@@ -130,7 +118,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-              ) : isAdmin ? (
+              </div>
+            ) : isAdmin ? (
+              <div className="mt-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Tools</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Link href="/admin" className="bg-purple-50 border-2 border-purple-200 p-6 rounded-lg hover:bg-purple-100 transition-colors">
                     <div className="flex items-start">
@@ -159,22 +150,9 @@ export default function DashboardPage() {
                     </div>
                   </Link>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>Admin tools are only available to administrators.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Account Information</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>User ID:</strong> {user.id}</p>
-                <p><strong>Role:</strong> {user.user_metadata?.role || 'USER'}</p>
-                <p><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
               </div>
-            </div>
+            ) : null}
+
           </div>
         </div>
       </div>
