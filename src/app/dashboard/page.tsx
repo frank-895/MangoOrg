@@ -2,17 +2,50 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
+    } else if (user) {
+      checkAdminStatus()
     }
   }, [user, loading, router])
+
+  const checkAdminStatus = async () => {
+    if (!user) {
+      setAdminCheckLoading(false)
+      return
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      if (token) {
+        const response = await fetch('/api/auth/admin', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setIsAdmin(data.isAdmin)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+    } finally {
+      setAdminCheckLoading(false)
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -55,18 +88,82 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-green-50 p-6 rounded-lg">
+              <Link href="/orchards" className="bg-green-50 p-6 rounded-lg hover:bg-green-100 transition-colors">
                 <h3 className="text-lg font-semibold text-green-800 mb-2">Orchards</h3>
                 <p className="text-green-600">Manage your mango orchards</p>
-              </div>
+              </Link>
               <div className="bg-blue-50 p-6 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-800 mb-2">Inspections</h3>
                 <p className="text-blue-600">Schedule and track inspections</p>
               </div>
-              <div className="bg-orange-50 p-6 rounded-lg">
+              <Link href="/diseases" className="bg-orange-50 p-6 rounded-lg hover:bg-orange-100 transition-colors">
                 <h3 className="text-lg font-semibold text-orange-800 mb-2">Diseases & Pests</h3>
                 <p className="text-orange-600">Monitor and record findings</p>
-              </div>
+              </Link>
+            </div>
+
+            {/* Admin Section */}
+            <div className="mt-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Tools</h2>
+              {adminCheckLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-100 p-6 rounded-lg animate-pulse">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 p-6 rounded-lg animate-pulse">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : isAdmin ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Link href="/admin" className="bg-purple-50 border-2 border-purple-200 p-6 rounded-lg hover:bg-purple-100 transition-colors">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-purple-800 mb-2">System Management</h3>
+                        <p className="text-purple-600">Manage locations and varieties for all users</p>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/diseases/create" className="bg-red-50 border-2 border-red-200 p-6 rounded-lg hover:bg-red-100 transition-colors">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-red-800 mb-2">Disease Management</h3>
+                        <p className="text-red-600">Add and edit disease/pest information</p>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Admin tools are only available to administrators.</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-lg">
