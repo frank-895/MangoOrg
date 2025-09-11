@@ -52,6 +52,69 @@ async function uploadSeedImage(imagePath: string, fileName: string): Promise<str
   }
 }
 
+// Location data template
+const locationData = [
+  {
+    id: 'north-queensland-001',
+    locationName: 'North Queensland',
+    hemisphere: 'SOUTH' as const,
+    locationSusceptability: 8
+  },
+  {
+    id: 'central-california-001',
+    locationName: 'Central California',
+    hemisphere: 'NORTH' as const,
+    locationSusceptability: 4
+  },
+  {
+    id: 'florida-keys-001',
+    locationName: 'Florida Keys',
+    hemisphere: 'NORTH' as const,
+    locationSusceptability: 9
+  },
+  {
+    id: 'western-australia-001',
+    locationName: 'Western Australia',
+    hemisphere: 'SOUTH' as const,
+    locationSusceptability: 5
+  },
+  {
+    id: 'northern-territory-001',
+    locationName: 'Northern Territory',
+    hemisphere: 'SOUTH' as const,
+    locationSusceptability: 7
+  }
+]
+
+// Variety data template
+const varietyData = [
+  {
+    id: 'kensington-pride-001',
+    varietyName: 'Kensington Pride',
+    varietySusceptability: 6
+  },
+  {
+    id: 'tommy-atkins-001',
+    varietyName: 'Tommy Atkins',
+    varietySusceptability: 4
+  },
+  {
+    id: 'honey-gold-001',
+    varietyName: 'Honey Gold',
+    varietySusceptability: 8
+  },
+  {
+    id: 'palmer-001',
+    varietyName: 'Palmer',
+    varietySusceptability: 5
+  },
+  {
+    id: 'calypso-001',
+    varietyName: 'Calypso',
+    varietySusceptability: 7
+  }
+]
+
 // Disease data template
 const diseaseData = [
   {
@@ -89,11 +152,36 @@ const diseaseData = [
   }
 ]
 
+async function createLocations() {
+  for (const location of locationData) {
+    await prisma.location.upsert({
+      where: { id: location.id },
+      update: location,
+      create: location
+    })
+    console.log(`✅ Created/Updated location: ${location.locationName}`)
+  }
+}
+
+async function createVarieties() {
+  for (const variety of varietyData) {
+    await prisma.variety.upsert({
+      where: { id: variety.id },
+      update: variety,
+      create: variety
+    })
+    console.log(`✅ Created/Updated variety: ${variety.varietyName}`)
+  }
+}
+
 async function createDiseases(imageUrls: string[]) {
-  const diseases = diseaseData.map((disease, index) => ({
-    ...disease,
-    imageLink: imageUrls[index] || disease.placeholderImage
-  }))
+  const diseases = diseaseData.map((disease, index) => {
+    const { placeholderImage, ...diseaseWithoutPlaceholder } = disease
+    return {
+      ...diseaseWithoutPlaceholder,
+      imageLink: imageUrls[index] || placeholderImage
+    }
+  })
 
   for (const disease of diseases) {
     await prisma.disease.upsert({
@@ -168,6 +256,13 @@ async function main() {
     console.log('   - NEXT_PUBLIC_SUPABASE_URL is set in .env.local')
     console.log('   - SUPABASE_SERVICE_ROLE_KEY is set in .env')
   }
+
+  // Create locations and varieties
+  console.log('📍 Creating locations...')
+  await createLocations()
+  
+  console.log('🥭 Creating varieties...')
+  await createVarieties()
 
   // Upload seed images and create diseases
   if (supabase) {
