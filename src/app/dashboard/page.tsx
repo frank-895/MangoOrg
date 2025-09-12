@@ -92,12 +92,15 @@ export default function DashboardPage() {
           const casesResponse = await fetch('/api/cases')
           if (casesResponse.ok) {
             const allCases = await casesResponse.json()
+            // Get ALL cases for this orchard (both ACTIVE and RESOLVED) for inspection records
             const orchardCases = allCases.filter((case_: any) => 
-              case_.orchardId === orchard.id && case_.status === 'ACTIVE'
+              case_.orchardId === orchard.id
             )
+            // But separate active cases for risk calculation
+            const activeCases = orchardCases.filter((case_: any) => case_.status === 'ACTIVE')
 
-            // Fetch records for each case
-            const casesWithRecords = await Promise.all(
+            // Fetch records for ALL cases (for inspection history)
+            const allCasesWithRecords = await Promise.all(
               orchardCases.map(async (case_: any) => {
                 const recordsResponse = await fetch(`/api/records?caseId=${case_.id}`)
                 if (recordsResponse.ok) {
@@ -108,9 +111,25 @@ export default function DashboardPage() {
               })
             )
 
-            return calculateUpcomingInspection({ ...orchard, cases: casesWithRecords })
+            // Fetch records for ACTIVE cases only (for risk calculation)
+            const activeCasesWithRecords = await Promise.all(
+              activeCases.map(async (case_: any) => {
+                const recordsResponse = await fetch(`/api/records?caseId=${case_.id}`)
+                if (recordsResponse.ok) {
+                  const records = await recordsResponse.json()
+                  return { ...case_, records }
+                }
+                return { ...case_, records: [] }
+              })
+            )
+
+            return calculateUpcomingInspection({ 
+              ...orchard, 
+              cases: activeCasesWithRecords, // For risk calculation
+              allCases: allCasesWithRecords // For inspection history
+            })
           }
-          return calculateUpcomingInspection({ ...orchard, cases: [] })
+          return calculateUpcomingInspection({ ...orchard, cases: [], allCases: [] })
         })
       )
 
@@ -148,8 +167,8 @@ export default function DashboardPage() {
     if (treesPerHectare > 800) densityRisk = 100
     else if (treesPerHectare > 400) densityRisk = 50
 
-    // Find most recent inspection
-    const allRecords = orchard.cases.flatMap((c: any) => c.records || [])
+    // Find most recent inspection across ALL cases (including resolved ones)
+    const allRecords = (orchard.allCases || orchard.cases).flatMap((c: any) => c.records || [])
     let timeRisk = 100
     let lastInspection: string | undefined
     
