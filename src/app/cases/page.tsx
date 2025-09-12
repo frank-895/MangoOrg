@@ -169,6 +169,15 @@ export default function CasesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Link 
+          href="/dashboard"
+          className="text-blue-600 hover:text-blue-700 mb-4 inline-flex items-center gap-2"
+        >
+          ← Back to Dashboard
+        </Link>
+      </div>
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Cases Management</h1>
         <button
