@@ -13,7 +13,6 @@ import {
   orchardWithInspectionHistoryFactory,
   testUtils,
 } from '../../utils/factories'
-import { setupTestDB, createTestScenario } from '../../utils/db-setup'
 
 // Mock Prisma for unit tests - we'll test with real DB in integration tests
 jest.mock('@/lib/prisma', () => ({

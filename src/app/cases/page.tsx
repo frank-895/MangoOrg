@@ -63,11 +63,16 @@ export default function CasesPage() {
   const [resolvingIds, setResolvingIds] = useState<string[]>([])
   const [reactivatingIds, setReactivatingIds] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<'ACTIVE' | 'RESOLVED'>('ACTIVE')
-  const [newCase, setNewCase] = useState({
+  const [newCase, setNewCase] = useState<{
+    diseaseId: string;
+    orchardId: string;
+    status: string;
+    partOfPlant: string;
+  }>({
     diseaseId: '',
     orchardId: '',
-    status: 'ACTIVE' as const,
-    partOfPlant: 'LEAF' as const
+    status: 'ACTIVE',
+    partOfPlant: 'LEAF'
   })
 
   useEffect(() => {
@@ -304,7 +309,7 @@ export default function CasesPage() {
               </label>
               <select
                 value={newCase.partOfPlant}
-                onChange={(e) => setNewCase({ ...newCase, partOfPlant: e.target.value as 'LEAF' | 'STEM' | 'FRUIT' })}
+                onChange={(e) => setNewCase({ ...newCase, partOfPlant: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="LEAF">Leaf</option>
