@@ -49,6 +49,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = authResult.userId
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID not found' },
+        { status: 401 }
+      )
+    }
 
     // Calculate upcoming inspections using the service
     const upcomingInspections = await calculateUpcomingInspections(userId)

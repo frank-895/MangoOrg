@@ -46,55 +46,6 @@ export default function InspectionsPage() {
     }
   }
 
-      const maxSpreadability = Math.max(...orchard.cases.map(c => c.disease.spreadability || 0))
-      casesRisk = ((maxSeverity + maxSpreadability) / 20) * 100
-      
-      if (casesRisk > 70) {
-        reasons.push(`High-risk active diseases detected (severity: ${maxSeverity}, spread: ${maxSpreadability})`)
-      } else if (casesRisk > 40) {
-        reasons.push(`Moderate-risk active diseases present`)
-      }
-    }
-
-    // 2. ENVIRONMENTAL RISK (25% weight)
-    const varietyRisk = (orchard.variety.varietySusceptability / 10) * 100
-    const locationRisk = (orchard.location.locationSusceptability / 10) * 100
-    const environmentalRisk = (varietyRisk + locationRisk) / 2
-    
-    if (environmentalRisk > 60) {
-      reasons.push(`High environmental risk (variety: ${orchard.variety.varietySusceptability}/10, location: ${orchard.location.locationSusceptability}/10)`)
-    }
-
-    // 3. DENSITY RISK (15% weight)
-    const totalTrees = orchard.noTreesRow * orchard.noTreesColumn
-    const treesPerHectare = totalTrees / orchard.area
-    let densityRisk = 20 // Low density default
-    
-    if (treesPerHectare > 800) {
-      densityRisk = 100
-      reasons.push(`Very high tree density (${Math.round(treesPerHectare)} trees/hectare)`)
-    } else if (treesPerHectare > 400) {
-      densityRisk = 50
-      reasons.push(`Moderate tree density (${Math.round(treesPerHectare)} trees/hectare)`)
-    }
-
-    // 4. TIME RISK (15% weight)
-    let timeRisk = 100 // Assume no recent inspection
-    let lastInspection: string | undefined
-    
-    // Find most recent inspection across ALL cases (including resolved ones)
-    const allRecords = (orchard.allCases || orchard.cases).flatMap(c => c.records || [])
-    if (allRecords.length > 0) {
-      const sortedRecords = allRecords.sort((a, b) => 
-        new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-      )
-      const mostRecent = sortedRecords[0]
-      lastInspection = mostRecent.recordedAt
-      
-      const daysSinceLastInspection = Math.floor(
-        (Date.now() - new Date(mostRecent.recordedAt).getTime()) / (1000 * 60 * 60 * 24)
-      )
-
   const getFrequencyDisplay = (frequency: string) => {
     switch (frequency) {
       case 'DAILY': return { text: 'Daily', color: 'text-red-800 bg-red-100', days: 1 }
@@ -234,7 +185,7 @@ export default function InspectionsPage() {
           <div className="mt-4 pt-3 border-t border-blue-200">
             <p className="text-xs text-blue-700">
               <strong>Risk Score Mapping:</strong> High Risk (≥70): Daily • 
-              Medium Risk (40-69): Every 3 Days • Low Risk (<40): Weekly
+              Medium Risk (40-69): Every 3 Days • Low Risk (&lt;40): Weekly
             </p>
           </div>
         </div>

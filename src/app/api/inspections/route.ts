@@ -48,6 +48,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = authResult.userId
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID not found' },
+        { status: 401 }
+      )
+    }
 
     // Calculate inspection recommendations using the service
     const recommendations = await calculateUserInspectionRecommendations(userId)

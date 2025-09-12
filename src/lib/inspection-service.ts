@@ -290,16 +290,18 @@ function calculateRecommendationFromData(orchard: any, allCases: any[]): Inspect
     )
     lastInspection = sortedRecords[0].recordedAt
     
-    const daysSinceLastInspection = Math.floor(
-      (Date.now() - new Date(lastInspection).getTime()) / (1000 * 60 * 60 * 24)
-    )
-    
-    // Calculate time-based risk
-    if (daysSinceLastInspection <= 1) timeRisk = 20       // Recent inspection
-    else if (daysSinceLastInspection <= 3) timeRisk = 40  // Within 3 days
-    else if (daysSinceLastInspection <= 7) timeRisk = 60  // Within a week
-    else if (daysSinceLastInspection <= 14) timeRisk = 80 // Within two weeks
-    else timeRisk = 100                                   // Over two weeks
+    if (lastInspection) {
+      const daysSinceLastInspection = Math.floor(
+        (Date.now() - new Date(lastInspection).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      
+      // Calculate time-based risk
+      if (daysSinceLastInspection <= 1) timeRisk = 20       // Recent inspection
+      else if (daysSinceLastInspection <= 3) timeRisk = 40  // Within 3 days
+      else if (daysSinceLastInspection <= 7) timeRisk = 60  // Within a week
+      else if (daysSinceLastInspection <= 14) timeRisk = 80 // Within two weeks
+      else timeRisk = 100                                   // Over two weeks
+    }
   }
 
   // 5. SEASONAL RISK (10% weight)

@@ -42,7 +42,7 @@ export default function Home() {
               <div className="text-4xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-gray-800 mb-3">Inspection Plans</h3>
               <p className="text-gray-600">
-                Generate comprehensive inspection plans tailored to your orchard's specific needs and conditions.
+                Generate comprehensive inspection plans tailored to your orchard&apos;s specific needs and conditions.
               </p>
             </div>
             <div className="text-center p-6 rounded-lg bg-green-50">

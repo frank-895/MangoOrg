@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -66,18 +66,15 @@ export default function CaseDetailPage() {
     numberOfTreesInfected: 0
   })
 
-  const [editCase, setEditCase] = useState({
-    status: 'ACTIVE' as const,
-    partOfPlant: 'LEAF' as const
+  const [editCase, setEditCase] = useState<{
+    status: string;
+    partOfPlant: string;
+  }>({
+    status: 'ACTIVE',
+    partOfPlant: 'LEAF'
   })
 
-  useEffect(() => {
-    if (caseId) {
-      fetchCase()
-    }
-  }, [caseId])
-
-  const fetchCase = async () => {
+  const fetchCase = useCallback(async () => {
     try {
       const response = await fetch(`/api/cases/${caseId}`)
       if (response.ok) {
@@ -96,7 +93,13 @@ export default function CaseDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [caseId, router])
+
+  useEffect(() => {
+    if (caseId) {
+      fetchCase()
+    }
+  }, [caseId, fetchCase])
 
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -277,7 +280,7 @@ export default function CaseDetailPage() {
                 </label>
                 <select
                   value={editCase.status}
-                  onChange={(e) => setEditCase({ ...editCase, status: e.target.value as 'ACTIVE' | 'RESOLVED' })}
+                  onChange={(e) => setEditCase({ ...editCase, status: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="ACTIVE">Active</option>
@@ -290,7 +293,7 @@ export default function CaseDetailPage() {
                 </label>
                 <select
                   value={editCase.partOfPlant}
-                  onChange={(e) => setEditCase({ ...editCase, partOfPlant: e.target.value as 'LEAF' | 'STEM' | 'FRUIT' })}
+                  onChange={(e) => setEditCase({ ...editCase, partOfPlant: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="LEAF">Leaf</option>

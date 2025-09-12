@@ -117,6 +117,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const userId = authResult.userId
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID not found' },
+        { status: 401 }
+      )
+    }
+
     const orchard = await prisma.orchard.create({
       data: {
         orchardName,
@@ -125,7 +133,7 @@ export async function POST(request: NextRequest) {
         area: parseFloat(area),
         varietyId,
         locationId,
-        userId: authResult.userId
+        userId
       },
       include: {
         variety: true,

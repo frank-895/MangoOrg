@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Disease } from '@/types/disease'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function DiseaseDetailPage() {
   const [disease, setDisease] = useState<Disease | null>(null)
@@ -119,9 +120,11 @@ export default function DiseaseDetailPage() {
               {/* Image */}
               {disease.imageLink && (
                 <div className="mb-8">
-                  <img
+                  <Image
                     src={disease.imageLink}
                     alt={disease.name}
+                    width={800}
+                    height={256}
                     className="w-full h-64 object-cover rounded-lg"
                   />
                 </div>
@@ -159,21 +162,21 @@ export default function DiseaseDetailPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm text-gray-600 font-medium">Severity</label>
-                    <div className={`mt-1 px-3 py-2 rounded text-sm font-medium ${getSeverityColor(disease.severity)}`}>
-                      {disease.severity}/10
+                    <div className={`mt-1 px-3 py-2 rounded text-sm font-medium ${getSeverityColor(disease.severity ?? 0)}`}>
+                      {disease.severity ?? 'N/A'}/10
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {disease.severity <= 3 ? 'Low' : disease.severity <= 6 ? 'Medium' : 'High'} impact on tree health
+                      {disease.severity ? (disease.severity <= 3 ? 'Low' : disease.severity <= 6 ? 'Medium' : 'High') : 'Unknown'} impact on tree health
                     </p>
                   </div>
                   
                   <div>
                     <label className="text-sm text-gray-600 font-medium">Spreadability</label>
-                    <div className={`mt-1 px-3 py-2 rounded text-sm font-medium ${getSpreadabilityColor(disease.spreadability)}`}>
-                      {disease.spreadability}/10
+                    <div className={`mt-1 px-3 py-2 rounded text-sm font-medium ${getSpreadabilityColor(disease.spreadability ?? 0)}`}>
+                      {disease.spreadability ?? 'N/A'}/10
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {disease.spreadability <= 3 ? 'Low' : disease.spreadability <= 6 ? 'Medium' : 'High'} risk of spreading
+                      {disease.spreadability ? (disease.spreadability <= 3 ? 'Low' : disease.spreadability <= 6 ? 'Medium' : 'High') : 'Unknown'} risk of spreading
                     </p>
                   </div>
                 </div>

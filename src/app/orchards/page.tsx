@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
@@ -63,15 +63,7 @@ export default function OrchardsPage() {
     data: null
   })
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    loadData()
-  }, [user, router])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       await Promise.all([
         loadOrchards(),
@@ -84,7 +76,15 @@ export default function OrchardsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    loadData()
+  }, [user, router, loadData])
 
   const loadOrchards = async () => {
     if (!user) return
