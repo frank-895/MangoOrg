@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { UpcomingInspection } from '@/lib/inspection-service'
@@ -15,16 +15,7 @@ export default function DashboardPage() {
   const [upcomingInspections, setUpcomingInspections] = useState<UpcomingInspection[]>([])
   const [inspectionsLoading, setInspectionsLoading] = useState(true)
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    } else if (user) {
-      checkAdminStatus()
-      fetchUpcomingInspections()
-    }
-  }, [user, loading, router])
-
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) {
       setAdminCheckLoading(false)
       return
@@ -49,9 +40,9 @@ export default function DashboardPage() {
     } finally {
       setAdminCheckLoading(false)
     }
-  }
+  }, [user])
 
-  const fetchUpcomingInspections = async () => {
+  const fetchUpcomingInspections = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
@@ -81,7 +72,18 @@ export default function DashboardPage() {
     } finally {
       setInspectionsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login')
+      } else if (user) {
+        checkAdminStatus()
+        fetchUpcomingInspections()
+      }
+    }
+  }, [user, loading, router, checkAdminStatus, fetchUpcomingInspections])
 
 
   if (loading) {

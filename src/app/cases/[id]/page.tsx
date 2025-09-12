@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -74,13 +74,7 @@ export default function CaseDetailPage() {
     partOfPlant: 'LEAF'
   })
 
-  useEffect(() => {
-    if (caseId) {
-      fetchCase()
-    }
-  }, [caseId])
-
-  const fetchCase = async () => {
+  const fetchCase = useCallback(async () => {
     try {
       const response = await fetch(`/api/cases/${caseId}`)
       if (response.ok) {
@@ -99,7 +93,13 @@ export default function CaseDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [caseId, router])
+
+  useEffect(() => {
+    if (caseId) {
+      fetchCase()
+    }
+  }, [caseId, fetchCase])
 
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Disease, CreateDiseaseData } from '@/types/disease'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { createLocalPreview, cleanupLocalPreview, validateImageFile } from '@/lib/images'
 
@@ -39,36 +40,7 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
     imageLink: ''
   })
 
-  useEffect(() => {
-    checkAdminStatus()
-    if (disease && isEditing) {
-      setFormData({
-        name: disease.name,
-        type: disease.type,
-        severity: disease.severity || 0,
-        spreadability: disease.spreadability || 0,
-        shortDescription: disease.shortDescription || '',
-        longDescription: disease.longDescription || '',
-        controlMethod: disease.controlMethod || '',
-        imageLink: disease.imageLink || ''
-      })
-      if (disease.imageLink) {
-        setImagePreview(disease.imageLink)
-        setCurrentImageUrl(disease.imageLink)
-      }
-    }
-  }, [disease, isEditing, user])
-
-  // Cleanup local preview URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (imagePreview && imagePreview.startsWith('blob:')) {
-        cleanupLocalPreview(imagePreview)
-      }
-    }
-  }, [imagePreview])
-
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (user) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -100,7 +72,36 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
       setIsUserAdmin(false)
       setRoleLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    checkAdminStatus()
+    if (disease && isEditing) {
+      setFormData({
+        name: disease.name,
+        type: disease.type,
+        severity: disease.severity || 0,
+        spreadability: disease.spreadability || 0,
+        shortDescription: disease.shortDescription || '',
+        longDescription: disease.longDescription || '',
+        controlMethod: disease.controlMethod || '',
+        imageLink: disease.imageLink || ''
+      })
+      if (disease.imageLink) {
+        setImagePreview(disease.imageLink)
+        setCurrentImageUrl(disease.imageLink)
+      }
+    }
+  }, [disease, isEditing, user, checkAdminStatus])
+
+  // Cleanup local preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        cleanupLocalPreview(imagePreview)
+      }
+    }
+  }, [imagePreview])
 
   // Show loading while checking role
   if (roleLoading) {
@@ -424,7 +425,7 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  0 = Doesn't spread, 10 = Highly contagious
+                  0 = Doesn&apos;t spread, 10 = Highly contagious
                 </p>
               </div>
             </div>
@@ -482,9 +483,11 @@ export default function DiseaseForm({ disease, isEditing = false }: DiseaseFormP
               {imagePreview && (
                 <div className="mb-4">
                   <div className="relative inline-block">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 object-cover rounded-lg border"
                     />
                     <button

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Disease } from '@/types/disease'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
 export default function DiseasesPage() {
@@ -15,27 +16,7 @@ export default function DiseasesPage() {
   const [isUserAdmin, setIsUserAdmin] = useState(false)
   const { user } = useAuth()
 
-  useEffect(() => {
-    fetchDiseases()
-    checkAdminStatus()
-  }, [user])
-
-  const fetchDiseases = async () => {
-    try {
-      const response = await fetch('/api/diseases')
-      if (!response.ok) {
-        throw new Error('Failed to fetch diseases')
-      }
-      const data = await response.json()
-      setDiseases(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (user) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -67,7 +48,27 @@ export default function DiseasesPage() {
       setIsUserAdmin(false)
       setRoleLoading(false)
     }
+  }, [user])
+
+  const fetchDiseases = async () => {
+    try {
+      const response = await fetch('/api/diseases')
+      if (!response.ok) {
+        throw new Error('Failed to fetch diseases')
+      }
+      const data = await response.json()
+      setDiseases(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    fetchDiseases()
+    checkAdminStatus()
+  }, [user, checkAdminStatus])
 
   const filteredDiseases = diseases.filter(disease => {
     if (filterType === 'ALL') return true
@@ -182,9 +183,11 @@ export default function DiseasesPage() {
               >
                 {/* Image */}
                 <div className="h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={getPlaceholderImage(disease)}
                     alt={disease.name}
+                    width={400}
+                    height={192}
                     className="w-full h-full object-cover"
                   />
                 </div>

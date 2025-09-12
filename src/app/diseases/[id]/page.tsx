@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Disease } from '@/types/disease'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function DiseaseDetailPage() {
   const [disease, setDisease] = useState<Disease | null>(null)
@@ -119,9 +120,11 @@ export default function DiseaseDetailPage() {
               {/* Image */}
               {disease.imageLink && (
                 <div className="mb-8">
-                  <img
+                  <Image
                     src={disease.imageLink}
                     alt={disease.name}
+                    width={800}
+                    height={256}
                     className="w-full h-64 object-cover rounded-lg"
                   />
                 </div>
