@@ -72,7 +72,7 @@ An AI-powered disease management system for mango orchards, built as part of a r
 
 ## 🏛️ Research Project
 
-This application was developed as part of a research project at **Charles Darwin University**, focusing on pedagogical integration of AI-driven development. 
+This application was developed as part of a research project at **Charles Darwin University**, focusing on the pedagogical integration of AI-driven development. 
 
 ## 📄 License
 
