@@ -1,7 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { calculateUpcomingInspections } from '@/lib/inspection-service'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+async function checkAuth(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { isAuthenticated: false, error: 'No valid authorization header' }
+  }
+
+  const token = authHeader.substring(7)
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      return { isAuthenticated: false, error: 'Invalid token' }
+    }
+
+    return { isAuthenticated: true, userId: user.id }
+  } catch (error) {
+    return { isAuthenticated: false, error: 'Auth check failed' }
+  }
+}
 
 /**
  * GET /api/inspections/upcoming
@@ -13,18 +38,17 @@ import { calculateUpcomingInspections } from '@/lib/inspection-service'
  * @returns {UpcomingInspection[]} Array of upcoming inspections sorted by urgency
  */
 export async function GET(request: NextRequest) {
-  try {
-    // Create Supabase client for server-side auth
-    const supabase = createServerComponentClient({ cookies })
-    
-    // Get the authenticated user
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    if (sessionError || !session?.user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+  const authResult = await checkAuth(request)
+  
+  if (!authResult.isAuthenticated) {
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    )
+  }
 
-    const userId = session.user.id
+  try {
+    const userId = authResult.userId
 
     // Calculate upcoming inspections using the service
     const upcomingInspections = await calculateUpcomingInspections(userId)

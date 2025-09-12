@@ -6,9 +6,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { InspectionRecommendation } from '@/lib/inspection-service'
 
- *    - No recent data: 80 points (conservative)
- */
-
 export default function InspectionsPage() {
   const { user } = useAuth()
   const [recommendations, setRecommendations] = useState<InspectionRecommendation[]>([])
