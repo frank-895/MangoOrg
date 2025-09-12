@@ -1,4 +1,4 @@
-# 🥭 MangoOrg - Smart Mango Disease Management
+# 🥭 MangoOrg
 
 An AI-powered disease management system for mango orchards, built as part of a research project for Charles Darwin University.
 
