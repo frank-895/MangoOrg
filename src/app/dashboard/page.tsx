@@ -5,19 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-
-type UpcomingInspection = {
-  orchardId: string
-  orchardName: string
-  varietyName: string
-  locationName: string
-  lastInspection?: string
-  nextInspection: string
-  daysUntilDue: number
-  frequency: 'DAILY' | 'THREE_DAYS' | 'WEEKLY'
-  status: 'OVERDUE' | 'DUE_TODAY' | 'DUE_SOON' | 'ON_TRACK'
-  activeCases: number
-}
+import type { UpcomingInspection } from '@/lib/inspection-service'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -73,76 +61,21 @@ export default function DashboardPage() {
         return
       }
 
-      // Fetch orchards with all related data (same logic as inspections page)
-      const response = await fetch('/api/orchards', {
+      // Use the new API endpoint for upcoming inspections
+      const response = await fetch('/api/inspections/upcoming', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
       if (!response.ok) {
+        console.error('Failed to fetch upcoming inspections')
         setInspectionsLoading(false)
         return
       }
 
       const data = await response.json()
-      const orchardsData = data.orchards || []
-
-      // Fetch cases and calculate inspections for each orchard
-      const inspections = await Promise.all(
-        orchardsData.map(async (orchard: any) => {
-          const casesResponse = await fetch('/api/cases')
-          if (casesResponse.ok) {
-            const allCases = await casesResponse.json()
-            // Get ALL cases for this orchard (both ACTIVE and RESOLVED) for inspection records
-            const orchardCases = allCases.filter((case_: any) => 
-              case_.orchardId === orchard.id
-            )
-            // But separate active cases for risk calculation
-            const activeCases = orchardCases.filter((case_: any) => case_.status === 'ACTIVE')
-
-            // Fetch records for ALL cases (for inspection history)
-            const allCasesWithRecords = await Promise.all(
-              orchardCases.map(async (case_: any) => {
-                const recordsResponse = await fetch(`/api/records?caseId=${case_.id}`)
-                if (recordsResponse.ok) {
-                  const records = await recordsResponse.json()
-                  return { ...case_, records }
-                }
-                return { ...case_, records: [] }
-              })
-            )
-
-            // Fetch records for ACTIVE cases only (for risk calculation)
-            const activeCasesWithRecords = await Promise.all(
-              activeCases.map(async (case_: any) => {
-                const recordsResponse = await fetch(`/api/records?caseId=${case_.id}`)
-                if (recordsResponse.ok) {
-                  const records = await recordsResponse.json()
-                  return { ...case_, records }
-                }
-                return { ...case_, records: [] }
-              })
-            )
-
-            return calculateUpcomingInspection({ 
-              ...orchard, 
-              cases: activeCasesWithRecords, // For risk calculation
-              allCases: allCasesWithRecords // For inspection history
-            })
-          }
-          return calculateUpcomingInspection({ ...orchard, cases: [], allCases: [] })
-        })
-      )
-
-      // Sort by urgency (overdue first, then by days until due)
-      const sortedInspections = inspections.sort((a, b) => {
-        if (a.status === 'OVERDUE' && b.status !== 'OVERDUE') return -1
-        if (b.status === 'OVERDUE' && a.status !== 'OVERDUE') return 1
-        if (a.status === 'DUE_TODAY' && b.status !== 'DUE_TODAY') return -1
-        if (b.status === 'DUE_TODAY' && a.status !== 'DUE_TODAY') return 1
-        return a.daysUntilDue - b.daysUntilDue
-      })
-
-      setUpcomingInspections(sortedInspections)
+      if (data.success) {
+        setUpcomingInspections(data.inspections || [])
+      }
     } catch (error) {
       console.error('Error fetching upcoming inspections:', error)
     } finally {
@@ -150,110 +83,6 @@ export default function DashboardPage() {
     }
   }
 
-  const calculateUpcomingInspection = (orchard: any): UpcomingInspection => {
-    // Use the same risk calculation logic from inspections page
-    const casesRisk = orchard.cases.length > 0 
-      ? ((Math.max(...orchard.cases.map((c: any) => c.disease?.severity || 0)) +
-          Math.max(...orchard.cases.map((c: any) => c.disease?.spreadability || 0))) / 20) * 100
-      : 0
-
-    const varietyRisk = (orchard.variety.varietySusceptability / 10) * 100
-    const locationRisk = (orchard.location.locationSusceptability / 10) * 100
-    const environmentalRisk = (varietyRisk + locationRisk) / 2
-
-    const totalTrees = orchard.noTreesRow * orchard.noTreesColumn
-    const treesPerHectare = totalTrees / orchard.area
-    let densityRisk = 20
-    if (treesPerHectare > 800) densityRisk = 100
-    else if (treesPerHectare > 400) densityRisk = 50
-
-    // Find most recent inspection across ALL cases (including resolved ones)
-    const allRecords = (orchard.allCases || orchard.cases).flatMap((c: any) => c.records || [])
-    let timeRisk = 100
-    let lastInspection: string | undefined
-    
-    if (allRecords.length > 0) {
-      const sortedRecords = allRecords.sort((a: any, b: any) => 
-        new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
-      )
-      lastInspection = sortedRecords[0].recordedAt
-    }
-
-    // Calculate seasonal risk
-    const now = new Date()
-    const month = now.getMonth() + 1
-    const adjustedMonth = orchard.location.hemisphere === 'SOUTH' ? 
-      (month <= 6 ? month + 6 : month - 6) : month
-    
-    let seasonalRisk = 20
-    if (adjustedMonth >= 3 && adjustedMonth <= 5) seasonalRisk = 90
-    else if (adjustedMonth >= 6 && adjustedMonth <= 8) seasonalRisk = 80
-    else if (adjustedMonth >= 9 && adjustedMonth <= 11) seasonalRisk = 50
-
-    const coverageRisk = 80 // Conservative default
-
-    // Calculate final risk score
-    const finalRisk = Math.round(
-      (casesRisk * 0.30) +
-      (environmentalRisk * 0.25) +
-      (densityRisk * 0.15) +
-      (timeRisk * 0.15) +
-      (seasonalRisk * 0.10) +
-      (coverageRisk * 0.05)
-    )
-
-    // Determine frequency
-    let frequency: 'DAILY' | 'THREE_DAYS' | 'WEEKLY'
-    let intervalDays: number
-    if (finalRisk >= 70) {
-      frequency = 'DAILY'
-      intervalDays = 1
-    } else if (finalRisk >= 40) {
-      frequency = 'THREE_DAYS'
-      intervalDays = 3
-    } else {
-      frequency = 'WEEKLY'
-      intervalDays = 7
-    }
-
-    // Calculate next inspection date and status
-    const lastInspectionDate = lastInspection ? new Date(lastInspection) : null
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    let nextInspectionDate: Date
-    let daysUntilDue: number
-    
-    if (lastInspectionDate) {
-      nextInspectionDate = new Date(lastInspectionDate)
-      nextInspectionDate.setDate(nextInspectionDate.getDate() + intervalDays)
-      daysUntilDue = Math.ceil((nextInspectionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    } else {
-      // No previous inspection - due immediately
-      nextInspectionDate = today
-      daysUntilDue = 0
-    }
-
-    // Determine status
-    let status: UpcomingInspection['status']
-    if (daysUntilDue < 0) status = 'OVERDUE'
-    else if (daysUntilDue === 0) status = 'DUE_TODAY'
-    else if (daysUntilDue <= 2) status = 'DUE_SOON'
-    else status = 'ON_TRACK'
-
-    return {
-      orchardId: orchard.id,
-      orchardName: orchard.orchardName,
-      varietyName: orchard.variety.varietyName,
-      locationName: orchard.location.locationName,
-      lastInspection,
-      nextInspection: nextInspectionDate.toISOString(),
-      daysUntilDue,
-      frequency,
-      status,
-      activeCases: orchard.cases.length
-    }
-  }
 
   if (loading) {
     return (
