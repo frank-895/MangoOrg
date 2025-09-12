@@ -274,7 +274,7 @@ export default function DashboardPage() {
               </Link>
               <Link href="/inspections" className="bg-purple-50 p-6 rounded-lg hover:bg-purple-100 transition-colors">
                 <h3 className="text-lg font-semibold text-purple-800 mb-2">Inspections</h3>
-                <p className="text-purple-600">AI-powered inspection schedule</p>
+                <p className="text-purple-600">Plan your upcoming inspections</p>
               </Link>
               <Link href="/diseases" className="bg-orange-50 p-6 rounded-lg hover:bg-orange-100 transition-colors">
                 <h3 className="text-lg font-semibold text-orange-800 mb-2">Diseases & Pests</h3>

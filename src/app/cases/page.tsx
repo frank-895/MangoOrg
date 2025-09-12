@@ -60,6 +60,9 @@ export default function CasesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creating, setCreating] = useState(false)
   const [deletingIds, setDeletingIds] = useState<string[]>([])
+  const [resolvingIds, setResolvingIds] = useState<string[]>([])
+  const [reactivatingIds, setReactivatingIds] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'RESOLVED'>('ACTIVE')
   const [newCase, setNewCase] = useState({
     diseaseId: '',
     orchardId: '',
@@ -154,6 +157,70 @@ export default function CasesPage() {
       console.error('Error deleting case:', error)
     } finally {
       setDeletingIds(prev => prev.filter(id => id !== caseId))
+    }
+  }
+
+  const handleResolveCase = async (caseId: string) => {
+    if (!confirm('Are you sure you want to mark this case as resolved?')) return
+
+    setResolvingIds(prev => [...prev, caseId])
+    try {
+      // Find the case to get its current data
+      const caseToResolve = cases.find(c => c.id === caseId)
+      if (!caseToResolve) return
+
+      const response = await fetch(`/api/cases/${caseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          diseaseId: caseToResolve.diseaseId,
+          orchardId: caseToResolve.orchardId,
+          status: 'RESOLVED',
+          partOfPlant: caseToResolve.partOfPlant
+        }),
+      })
+
+      if (response.ok) {
+        await fetchData()
+      }
+    } catch (error) {
+      console.error('Error resolving case:', error)
+    } finally {
+      setResolvingIds(prev => prev.filter(id => id !== caseId))
+    }
+  }
+
+  const handleReactivateCase = async (caseId: string) => {
+    if (!confirm('Are you sure you want to reactivate this case?')) return
+
+    setReactivatingIds(prev => [...prev, caseId])
+    try {
+      // Find the case to get its current data
+      const caseToReactivate = cases.find(c => c.id === caseId)
+      if (!caseToReactivate) return
+
+      const response = await fetch(`/api/cases/${caseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          diseaseId: caseToReactivate.diseaseId,
+          orchardId: caseToReactivate.orchardId,
+          status: 'ACTIVE',
+          partOfPlant: caseToReactivate.partOfPlant
+        }),
+      })
+
+      if (response.ok) {
+        await fetchData()
+      }
+    } catch (error) {
+      console.error('Error reactivating case:', error)
+    } finally {
+      setReactivatingIds(prev => prev.filter(id => id !== caseId))
     }
   }
 
@@ -270,14 +337,46 @@ export default function CasesPage() {
         </div>
       )}
 
+      {/* Tabs */}
+      <div className="mb-8 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('ACTIVE')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'ACTIVE'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Active Cases ({cases.filter(c => c.status === 'ACTIVE').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('RESOLVED')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'RESOLVED'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Resolved Cases ({cases.filter(c => c.status === 'RESOLVED').length})
+          </button>
+        </nav>
+      </div>
+
       <div className="grid gap-6">
-        {cases.length === 0 ? (
+        {cases.filter(case_ => case_.status === activeTab).length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No cases found.</p>
-            <p className="text-gray-400">Create your first case to get started.</p>
+            <p className="text-gray-500 text-lg">
+              No {activeTab.toLowerCase()} cases found.
+            </p>
+            {activeTab === 'ACTIVE' ? (
+              <p className="text-gray-400">Create your first case to get started.</p>
+            ) : (
+              <p className="text-gray-400">Resolved cases will appear here when cases are marked as resolved.</p>
+            )}
           </div>
         ) : (
-          cases.map((case_) => (
+          cases.filter(case_ => case_.status === activeTab).map((case_) => (
             <div key={case_.id} className="bg-white rounded-lg shadow-md p-6 border">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -324,9 +423,32 @@ export default function CasesPage() {
                 >
                   View Details
                 </Link>
+                {case_.status === 'ACTIVE' ? (
+                  <button
+                    onClick={() => handleResolveCase(case_.id)}
+                    disabled={resolvingIds.includes(case_.id)}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {resolvingIds.includes(case_.id) && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    {resolvingIds.includes(case_.id) ? 'Resolving...' : 'Mark as Resolved'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleReactivateCase(case_.id)}
+                    disabled={reactivatingIds.includes(case_.id)}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {reactivatingIds.includes(case_.id) && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    {reactivatingIds.includes(case_.id) ? 'Reactivating...' : 'Reactivate'}
+                  </button>
+                )}
                 <button
                   onClick={() => handleDeleteCase(case_.id)}
-                  disabled={deletingIds.includes(case_.id)}
+                  disabled={deletingIds.includes(case_.id) || resolvingIds.includes(case_.id) || reactivatingIds.includes(case_.id)}
                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {deletingIds.includes(case_.id) && (
