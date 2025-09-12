@@ -1,0 +1,2 @@
+-- Migration is now empty since we're using Supabase's built-in auth.users table
+-- This migration file is kept for migration history consistency

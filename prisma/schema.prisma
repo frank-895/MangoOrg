@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+model Disease {
+  id               String      @id @default(cuid())
+  name             String      @unique
+  type             DiseaseType
+  severity         Int?        @default(0)
+  spreadability    Int?        @default(0)
+  shortDescription String?
+  longDescription  String?
+  controlMethod    String?
+  imageLink        String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  // Relations
+  cases            Case[]
+
+  @@map("diseases")
+}
+
+model Variety {
+  id                    String    @id @default(cuid())
+  varietyName           String    @map("variety_name")
+  varietySusceptability Int       @map("variety_susceptability")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  orchards              Orchard[]
+
+  @@map("varieties")
+}
+
+model Location {
+  id                     String     @id @default(cuid())
+  locationName           String     @map("location_name")
+  hemisphere             Hemisphere @default(SOUTH)
+  locationSusceptability Int        @map("location_susceptability")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+  orchards               Orchard[]
+
+  @@map("locations")
+}
+
+model Orchard {
+  id            String   @id @default(cuid())
+  orchardName   String   @map("orchard_name")
+  noTreesRow    Int      @map("no_trees_row")
+  noTreesColumn Int      @map("no_trees_column")
+  area          Float
+  userId        String   @map("user_id")
+  varietyId     String   @map("variety_id")
+  locationId    String   @map("location_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  location      Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  variety       Variety  @relation(fields: [varietyId], references: [id], onDelete: Restrict)
+  cases         Case[]
+  records       Record[]
+
+  @@map("orchards")
+}
+
+enum Hemisphere {
+  NORTH
+  SOUTH
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CaseStatus {
+  ACTIVE
+  RESOLVED
+}
+
+enum PlantPart {
+  LEAF
+  STEM
+  FRUIT
+}
+
+model Case {
+  id           String        @id @default(cuid())
+  diseaseId    String?       @map("disease_id")
+  orchardId    String?       @map("orchard_id")
+  status       CaseStatus?   @default(ACTIVE)
+  partOfPlant  PlantPart?    @map("part_of_plant")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  disease      Disease?      @relation(fields: [diseaseId], references: [id], onDelete: Cascade)
+  orchard      Orchard?      @relation(fields: [orchardId], references: [id], onDelete: Cascade)
+  records      Record[]
+  
+  @@map("cases")
+}
+
+model Record {
+  id                     String    @id @default(cuid())
+  caseId                 String?   @map("case_id")
+  orchardId              String?   @map("orchard_id")
+  recordedAt             DateTime  @default(now()) @map("recorded_at")
+  numberOfTreesChecked   Int       @map("number_of_trees_checked")
+  numberOfTreesInfected  Int       @map("number_of_trees_infected")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  case                   Case?     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  orchard                Orchard?  @relation(fields: [orchardId], references: [id], onDelete: Cascade)
+  
+  @@map("records")
+}
+
+enum DiseaseType {
+  DISEASE
+  PEST
+}
