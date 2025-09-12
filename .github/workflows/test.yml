@@ -69,39 +69,6 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
-      - name: Comment test results on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            
-            let testSummary = '✅ All tests passed!';
-            
-            try {
-              const coverage = fs.readFileSync('./coverage/coverage-summary.json', 'utf8');
-              const coverageData = JSON.parse(coverage);
-              const totalCoverage = coverageData.total.lines.pct;
-              
-              testSummary = `
-              ## 🧪 Test Results
-              
-              ✅ Unit tests passed (< 1 second)
-              📊 Algorithm Coverage: ${totalCoverage}%
-              🎯 Core business logic protected
-              
-              ${totalCoverage >= 80 ? '🎉' : '⚠️'} Coverage ${totalCoverage >= 80 ? 'exceeds' : 'below'} target threshold
-              `;
-            } catch (error) {
-              console.log('Coverage summary not available');
-            }
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: testSummary
-            });
 
   deploy-preview:
     needs: test
@@ -127,27 +94,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Comment deployment info on PR
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `
-              ## 🚀 Build Status
-              
-              ✅ Build completed successfully!
-              
-              **Build Details:**
-              - Node.js: 18
-              - Next.js: Production build
-              - Bundle size: Optimized
-              
-              Ready for deployment to staging environment.
-              `
-            });
 
   security-scan:
     runs-on: ubuntu-latest
