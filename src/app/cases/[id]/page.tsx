@@ -56,6 +56,9 @@ export default function CaseDetailPage() {
   const [showAddRecord, setShowAddRecord] = useState(false)
   const [showEditCase, setShowEditCase] = useState(false)
   const [editingRecord, setEditingRecord] = useState<Record | null>(null)
+  const [addingRecord, setAddingRecord] = useState(false)
+  const [updatingCase, setUpdatingCase] = useState(false)
+  const [deletingRecordIds, setDeletingRecordIds] = useState<string[]>([])
   
   const [newRecord, setNewRecord] = useState({
     recordedAt: new Date().toISOString().split('T')[0],
@@ -97,6 +100,7 @@ export default function CaseDetailPage() {
 
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault()
+    setAddingRecord(true)
     try {
       const response = await fetch('/api/records', {
         method: 'POST',
@@ -121,11 +125,14 @@ export default function CaseDetailPage() {
       }
     } catch (error) {
       console.error('Error adding record:', error)
+    } finally {
+      setAddingRecord(false)
     }
   }
 
   const handleUpdateCase = async (e: React.FormEvent) => {
     e.preventDefault()
+    setUpdatingCase(true)
     try {
       const response = await fetch(`/api/cases/${caseId}`, {
         method: 'PUT',
@@ -145,12 +152,15 @@ export default function CaseDetailPage() {
       }
     } catch (error) {
       console.error('Error updating case:', error)
+    } finally {
+      setUpdatingCase(false)
     }
   }
 
   const handleDeleteRecord = async (recordId: string) => {
     if (!confirm('Are you sure you want to delete this record?')) return
 
+    setDeletingRecordIds(prev => [...prev, recordId])
     try {
       const response = await fetch(`/api/records/${recordId}`, {
         method: 'DELETE',
@@ -161,6 +171,8 @@ export default function CaseDetailPage() {
       }
     } catch (error) {
       console.error('Error deleting record:', error)
+    } finally {
+      setDeletingRecordIds(prev => prev.filter(id => id !== recordId))
     }
   }
 
@@ -225,7 +237,8 @@ export default function CaseDetailPage() {
             </span>
             <button
               onClick={() => setShowEditCase(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              disabled={updatingCase || showEditCase}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Edit Case
             </button>
@@ -289,14 +302,19 @@ export default function CaseDetailPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                disabled={updatingCase}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Update Case
+                {updatingCase && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                {updatingCase ? 'Updating...' : 'Update Case'}
               </button>
               <button
                 type="button"
+                disabled={updatingCase}
                 onClick={() => setShowEditCase(false)}
-                className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -311,7 +329,8 @@ export default function CaseDetailPage() {
           <h2 className="text-xl font-semibold">Inspection Records</h2>
           <button
             onClick={() => setShowAddRecord(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            disabled={addingRecord || showAddRecord}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Record
           </button>
@@ -365,14 +384,19 @@ export default function CaseDetailPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  disabled={addingRecord}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Add Record
+                  {addingRecord && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  {addingRecord ? 'Adding...' : 'Add Record'}
                 </button>
                 <button
                   type="button"
+                  disabled={addingRecord}
                   onClick={() => setShowAddRecord(false)}
-                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -407,9 +431,13 @@ export default function CaseDetailPage() {
                     </div>
                     <button
                       onClick={() => handleDeleteRecord(record.id)}
-                      className="text-red-600 hover:text-red-700 text-sm"
+                      disabled={deletingRecordIds.includes(record.id)}
+                      className="text-red-600 hover:text-red-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
-                      Delete
+                      {deletingRecordIds.includes(record.id) && (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                      )}
+                      {deletingRecordIds.includes(record.id) ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                   

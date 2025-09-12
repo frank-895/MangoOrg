@@ -58,6 +58,8 @@ export default function CasesPage() {
   const [orchards, setOrchards] = useState<Orchard[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [deletingIds, setDeletingIds] = useState<string[]>([])
   const [newCase, setNewCase] = useState({
     diseaseId: '',
     orchardId: '',
@@ -109,6 +111,7 @@ export default function CasesPage() {
 
   const handleCreateCase = async (e: React.FormEvent) => {
     e.preventDefault()
+    setCreating(true)
     try {
       const response = await fetch('/api/cases', {
         method: 'POST',
@@ -130,12 +133,15 @@ export default function CasesPage() {
       }
     } catch (error) {
       console.error('Error creating case:', error)
+    } finally {
+      setCreating(false)
     }
   }
 
   const handleDeleteCase = async (caseId: string) => {
     if (!confirm('Are you sure you want to delete this case?')) return
 
+    setDeletingIds(prev => [...prev, caseId])
     try {
       const response = await fetch(`/api/cases/${caseId}`, {
         method: 'DELETE',
@@ -146,6 +152,8 @@ export default function CasesPage() {
       }
     } catch (error) {
       console.error('Error deleting case:', error)
+    } finally {
+      setDeletingIds(prev => prev.filter(id => id !== caseId))
     }
   }
 
@@ -165,7 +173,8 @@ export default function CasesPage() {
         <h1 className="text-3xl font-bold">Cases Management</h1>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          disabled={creating || showCreateForm}
+          className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Create New Case
         </button>
@@ -231,14 +240,19 @@ export default function CasesPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                disabled={creating}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Create Case
+                {creating && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                {creating ? 'Creating...' : 'Create Case'}
               </button>
               <button
                 type="button"
+                disabled={creating}
                 onClick={() => setShowCreateForm(false)}
-                className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -303,9 +317,13 @@ export default function CasesPage() {
                 </Link>
                 <button
                   onClick={() => handleDeleteCase(case_.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                  disabled={deletingIds.includes(case_.id)}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Delete
+                  {deletingIds.includes(case_.id) && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  {deletingIds.includes(case_.id) ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
